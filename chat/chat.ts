@@ -20,7 +20,8 @@ module Chat {
         // This appends the chat item and escapes it
         // TODO: make a smarter process for escaping chat so we can embed some html
         var newChatItem = $('<div/>').addClass('chatItem');
-        if (iconClass) newChatItem.append($('<div/>').addClass('iconClass'));
+
+        if (iconClass) newChatItem.append($('<div/>').addClass(iconClass));
         newChatItem.append(chatBody);
         newChatItem.appendTo($chatText);
         var msgs = $('.chatItem');
@@ -50,11 +51,9 @@ module Chat {
             default:
                 break;
         }
-
         var chatBody = $('<div/>').text(msg).addClass(msgClass);
         AppendChat(chatBody, null);
     }
-
     function OnChat(type, from, body, nick, iscse) {
         var msg;
         var msgClass = 'chatBody';
@@ -69,7 +68,7 @@ module Chat {
                 msg = '[IM from] [' + displayName + ']: ' + body;
                 msgClass = msgClass + ' imChat';
                 lastTellFrom = jid;
-            break;
+                break;
             case XmppMessageType.GROUPCHAT:
                 jid = new JID(from);
                 switch (jid.user) {
@@ -116,6 +115,8 @@ module Chat {
                     SetTextEntryMode(0);
                     $chatInput.blur();
                 }
+            } else {
+                $chatInput.blur();
             }
         }
     }
@@ -133,7 +134,9 @@ module Chat {
         $chatInput.val(initText ? initText : '');
         SetTextEntryMode(cmdKind);
     }
-
+    function AppendConsoleText(output) {
+        OnConsoleText(output);
+    }
     function OnConsoleText(output) {
         var lines = output.split(/[\r\n]+/);
         var len = lines.length;
@@ -162,6 +165,7 @@ module Chat {
         var processed = $.terminal.parseCommand(input);
         var to;
         var body;
+        var name;
         switch (processed.name) {
             case '/join':
                 if (processed.args.length < 1) {
@@ -192,6 +196,7 @@ module Chat {
                 return true;
             case '/tell':
             case '/whisper':
+
                 if (processed.args.length < 2) {
                     OnConsoleText("Usage: " + processed.name + " <to> <message>");
                     return false;
@@ -207,25 +212,37 @@ module Chat {
                 return true;
             case '/r':
                 if (processed.args.length < 1) {
-                    OnConsoleText("Usage: " + processed.name + " <message>");
+                    AppendConsoleText("Usage: " + processed.name + " <message>");
                     return false;
                 }
                 if (lastTellFrom) {
                     body = processed.rest;
-                    cu.SendChat(XmppMessageType.CHAT, lastTellFrom.user+'@'+lastTellFrom.domain, body);
+                    cu.SendChat(XmppMessageType.CHAT, lastTellFrom.user + '@' + lastTellFrom.domain, body);
                     OnChatCommand(processed.name, lastTellFrom.user, body);
                 } else {
-                    OnConsoleText("Found no one to reply to.");
+                    AppendConsoleText("Found no one to reply to.");
                 }
                 return true;
-            break;
             case '/openui':
+
                 if (processed.args.length < 1) {
-                    OnConsoleText("Usage: " + processed.name + " <name>\r\nHint: The addon name without '.ui' extension. e.g. /openui addon");
+                    OnConsoleText("Usage: " + processed.name + " <name>");
                     return false;
                 }
                 var name:string = processed.args[0];
-                cuAPI.OpenUI(name + ".ui");
+                if (name.indexOf('.ui') === -1) {
+                    name = name + '.ui';
+                }
+                cuAPI.OpenUI(name);
+                return true;
+            case '/closeui':
+                if (processed.args.length < 1) return false;
+                name = processed.args[0];
+                var uiIndex = name.indexOf('.ui');
+                if (uiIndex !== -1) {
+                    name = name.substring(0, uiIndex);
+                }
+                cuAPI.CloseUI(name);
                 return true;
             case '/connect':
                 if (cu.HasAPI()) return false;
