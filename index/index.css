@@ -43,6 +43,7 @@ iframe {
 }
 .ui-icon-minus, .ui-icon-plus {
     cursor:pointer;
+    right:16px;
 }
  
 #save, #reload, #saveModuleList {

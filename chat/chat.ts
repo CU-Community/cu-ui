@@ -165,7 +165,6 @@ module Chat {
         var processed = $.terminal.parseCommand(input);
         var to;
         var body;
-        var name;
         switch (processed.name) {
             case '/join':
                 if (processed.args.length < 1) {
